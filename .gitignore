@@ -1,0 +1,26 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Generated training artifacts
+runs/
+models/**/*.pt
+models/**/*.pth
+models/**/*.dat
+!models/**/README.md
+models/**/model_info.json
+models/**/eval_*.json
+models/**/calibration.json
+storage/sessions/
+storage/logs/
+
+# Dataset (too large for git)
+data/
+
+# IDE
+.idea/
+.vscode/
+
+# Local virtual environments
+.venv/
+venv/
