@@ -4,8 +4,8 @@ Look at a cell on the phone screen to select it, close your eyes briefly to conf
 A research project covering the full loop: dataset preparation, model training, rigorous evaluation,
 on-device deployment (LiteRT) and a user study — all on-device, no network permission.
 
-> **Status:** v2 rewrite in progress. Milestones M0–M3 (repo and CI, domain layer, dataset pipeline,
-> model/training/evaluation) are done; results will be added once trained on the full dataset; see [Roadmap](#roadmap). The legacy v1 code is preserved at commit `db82694`.
+> **Status:** v2 rewrite in progress. Milestones M0–M4 (repo and CI, domain layer, dataset pipeline,
+> model/training/evaluation, LiteRT export and golden fixtures) are done; results will be added once trained on the full dataset; see [Roadmap](#roadmap). The legacy v1 code is preserved at commit `db82694`.
 
 ## Repository layout
 
@@ -69,6 +69,16 @@ uv --directory research run eyegaze evaluate --run runs/base --manifest runs/man
 uv --directory research run eyegaze ablation-table runs/* --baseline base
 ```
 
+Export a trained run to the bundle the app ships (fails if LiteRT and PyTorch disagree):
+
+```bash
+make setup-export
+```
+
+```bash
+uv --directory research run eyegaze export --run runs/base --out models/base --manifest runs/manifest.parquet --frames-root data/gazecapture
+```
+
 Experiment configs live in [`research/configs/`](research/configs/) (`base` = E1, `e0_*` = legacy crops,
 `e3_*` = ablations). On Colab use
 [`research/notebooks/02_train_evaluate.ipynb`](research/notebooks/02_train_evaluate.ipynb) (GPU, resumes from
@@ -95,8 +105,8 @@ Details: [docs/architecture.md](docs/architecture.md) · [ADRs](docs/adr/) ·
 | M1 | Domain: preprocessing spec + reference sampler, features, geometry, calibration, metrics | done |
 | M2 | Dataset pipeline: GazeCapture reader, resumable parallel landmarking, manifest + drop report | done |
 | M3 | Model v2, training (on-the-fly crops, resumable), evaluation (E1 accuracy, E2 calibration simulation, E0/E3 ablations), Colab notebook | done |
-| M4 | LiteRT export, parity tests, golden fixtures | next |
-| M5 | Android `:core:domain` | |
+| M4 | LiteRT export (verified bundle + model card), parity tests, golden fixtures for Android | done |
+| M5 | Android `:core:domain` | next |
 | M6 | Android camera + ML adapters, Board screen | |
 | M7 | Calibration flow, profiles | |
 | M8 | Evaluation mode + session export, laptop demo | |

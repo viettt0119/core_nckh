@@ -27,8 +27,8 @@ jobs:
         run: sudo apt-get update -q && sudo apt-get install -y -q libgles2 libegl1
       - name: Sync environment
         run: make setup
-      - name: CPU PyTorch + scikit-learn (CUDA wheels are too large for CI runners)
-        run: uv pip install --python research/.venv torch scikit-learn --index-url https://download.pytorch.org/whl/cpu --extra-index-url https://pypi.org/simple
+      - name: CPU PyTorch, scikit-learn, LiteRT (CUDA wheels are too large for CI runners)
+        run: uv pip install --python research/.venv torch scikit-learn litert-torch ai-edge-litert --index-url https://download.pytorch.org/whl/cpu --extra-index-url https://pypi.org/simple
       - name: Download face landmarker model
         run: make models
       - name: Lint

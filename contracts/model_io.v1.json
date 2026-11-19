@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "signature": "serving_default",
+  "inputs": [
+    {"name": "right_eye", "shape": [1, "eye.size", "eye.size", 3], "dtype": "float32", "layout": "NHWC", "range": [0.0, 1.0]},
+    {"name": "left_eye", "shape": [1, "eye.size", "eye.size", 3], "dtype": "float32", "layout": "NHWC", "range": [0.0, 1.0],
+     "note": "horizontally flipped when preprocess spec eye.flip_left is true"},
+    {"name": "face", "shape": [1, "face.size", "face.size", 3], "dtype": "float32", "layout": "NHWC", "range": [0.0, 1.0]},
+    {"name": "geometry", "shape": [1, "geometry.dim"], "dtype": "float32", "note": "layout given by preprocess spec geometry.layout"}
+  ],
+  "outputs": [
+    {"name": "gaze_cm", "shape": [1, 2], "dtype": "float32", "note": "camera space, cm: +x right, +y up, origin at the camera"},
+    {"name": "embedding", "shape": [1, "embedding_dim"], "dtype": "float32", "note": "features for on-device calibration"}
+  ]
+}

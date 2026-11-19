@@ -1,0 +1,18 @@
+{
+ "generator_version": 1,
+ "spec_file": "../preprocess_spec.v1.json",
+ "spec_sha256": "6ae7d24b3cd21c24e31889aa48d68ca319c0c6c42085ecd499c20b66709ac336",
+ "tolerances": {
+  "crops": 0.001,
+  "scalars": 1e-06,
+  "model_outputs": 0.0001
+ },
+ "cases": [
+  "frontal_portrait",
+  "roll_positive",
+  "roll_negative_pose",
+  "near_border",
+  "small_face_landscape",
+  "large_face"
+ ]
+}

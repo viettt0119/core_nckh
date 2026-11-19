@@ -27,6 +27,12 @@ ml = [
     "scikit-learn>=1.4",  # SVR baseline for the calibration comparison (E2)
 ]
 
+# LiteRT export + interpreter (parity tests, golden model).
+export = [
+    "litert-torch>=0.10",
+    "ai-edge-litert>=2.3",
+]
+
 [project.scripts]
 eyegaze = "eyegaze.cli:app"
 
@@ -77,7 +83,7 @@ module = "eyegaze.domain.*"
 strict = true
 
 [[tool.mypy.overrides]]
-module = ["mediapipe.*", "cv2.*", "pyarrow.*", "sklearn.*"]
+module = ["mediapipe.*", "cv2.*", "pyarrow.*", "sklearn.*", "litert_torch.*", "ai_edge_litert.*"]
 ignore_missing_imports = true
 
 # ---------------------------------------------------------------- pytest

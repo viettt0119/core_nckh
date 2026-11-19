@@ -74,6 +74,23 @@ flowchart LR
   training uses an OpenCV `remap` twin (`adapters/fast_sampler.py`), ~4.5x faster and within 0.05 grey levels
   (property-tested).
 
+## Export and golden fixtures
+
+```mermaid
+flowchart LR
+    CK[(best.pt)] --> W[NhwcGazeModel<br/>NHWC in · named outputs]
+    W -->|litert-torch| TF[gaze_model.tflite]
+    TF --> IO{model_io.v1.json<br/>names · shapes · dtypes}
+    TF --> PAR{parity vs PyTorch<br/>random + real test frames<br/>≤ 1e-3 cm}
+    IO & PAR -->|all pass| B[(bundle: tflite + preprocess_spec.json + model_card.json)]
+    REF[Python reference<br/>domain/preprocess, calibration, geometry] -->|eyegaze golden| G[(contracts/golden<br/>6 face cases · calibration · screen geometry · golden model)]
+    G -.->|Kotlin must reproduce| AND[Android tests]
+    B -.->|bundled in APK, hashes checked at start-up| AND
+```
+
+The app reads `preprocess_spec.json` from the bundle at runtime (crop sizes, scales, landmark indices), so an
+ablation variant (e.g. 96 px eyes) runs without app code changes.
+
 ## Per-frame pipeline (Android)
 
 ```mermaid

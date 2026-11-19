@@ -3,7 +3,7 @@ RESEARCH := research
 UV := uv --directory $(RESEARCH)
 LANDMARKER_URL := https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task
 
-.PHONY: help setup setup-ml lint format typecheck test check models clean
+.PHONY: help setup setup-ml setup-export golden lint format typecheck test check models clean
 
 help:  ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-12s %s\n", $$1, $$2}'
@@ -13,6 +13,12 @@ setup:  ## Create the research virtualenv (core + data extra + dev tools)
 
 setup-ml:  ## Also install PyTorch + scikit-learn (training/evaluation)
 	$(UV) sync --python 3.11 --extra data --extra ml
+
+setup-export:  ## Everything, including litert-torch for LiteRT export
+	$(UV) sync --python 3.11 --extra data --extra ml --extra export
+
+golden:  ## Regenerate contracts/golden (review the diff before committing)
+	$(UV) run eyegaze golden --with-model
 
 lint:  ## Ruff lint + format check
 	$(UV) run ruff check src tests
