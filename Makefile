@@ -3,7 +3,7 @@ RESEARCH := research
 UV := uv --directory $(RESEARCH)
 LANDMARKER_URL := https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task
 
-.PHONY: help setup setup-ml setup-export golden lint format typecheck test check models clean
+.PHONY: help setup setup-ml setup-export golden android-check android-format lint format typecheck test check models clean
 
 help:  ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-12s %s\n", $$1, $$2}'
@@ -35,6 +35,12 @@ test:  ## Run the test suite
 	$(UV) run pytest
 
 check: lint typecheck test  ## Everything CI runs for research/
+
+android-check:  ## Android :core:domain — ktlint + JVM unit and golden parity tests
+	cd android && ./gradlew :core:domain:check --no-daemon
+
+android-format:  ## Apply ktlint formatting to Android sources
+	cd android && ./gradlew :core:domain:ktlintFormat --no-daemon
 
 models:  ## Download the MediaPipe Face Landmarker model into models/
 	mkdir -p models

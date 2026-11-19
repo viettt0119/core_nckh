@@ -1,0 +1,38 @@
+name: android
+
+on:
+  push:
+    paths: ["android/**", "contracts/**", ".github/workflows/android.yml"]
+  pull_request:
+    paths: ["android/**", "contracts/**", ".github/workflows/android.yml"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  domain:
+    name: core:domain (JVM unit + golden parity tests, ktlint)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: android
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Check
+        run: ./gradlew :core:domain:check --no-daemon
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: domain-test-reports
+          path: android/core/domain/build/reports

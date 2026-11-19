@@ -4,8 +4,8 @@ Look at a cell on the phone screen to select it, close your eyes briefly to conf
 A research project covering the full loop: dataset preparation, model training, rigorous evaluation,
 on-device deployment (LiteRT) and a user study — all on-device, no network permission.
 
-> **Status:** v2 rewrite in progress. Milestones M0–M4 (repo and CI, domain layer, dataset pipeline,
-> model/training/evaluation, LiteRT export and golden fixtures) are done; results will be added once trained on the full dataset; see [Roadmap](#roadmap). The legacy v1 code is preserved at commit `db82694`.
+> **Status:** v2 rewrite in progress. Milestones M0–M5 (repo and CI, domain layer, dataset pipeline,
+> model/training/evaluation, LiteRT export and golden fixtures, Android core domain) are done; results will be added once trained on the full dataset; see [Roadmap](#roadmap). The legacy v1 code is preserved at commit `db82694`.
 
 ## Repository layout
 
@@ -84,6 +84,15 @@ Experiment configs live in [`research/configs/`](research/configs/) (`base` = E1
 [`research/notebooks/02_train_evaluate.ipynb`](research/notebooks/02_train_evaluate.ipynb) (GPU, resumes from
 `last.pt`).
 
+## Android core (JVM, no SDK needed)
+
+```bash
+make android-check
+```
+
+Runs ktlint plus the `:core:domain` tests, including the golden parity tests that replay
+`contracts/golden` through the Kotlin preprocessing and calibration code.
+
 ## Key design points
 
 * **Train/serve parity by construction** — the same MediaPipe Face Landmarker and the same crop
@@ -106,8 +115,8 @@ Details: [docs/architecture.md](docs/architecture.md) · [ADRs](docs/adr/) ·
 | M2 | Dataset pipeline: GazeCapture reader, resumable parallel landmarking, manifest + drop report | done |
 | M3 | Model v2, training (on-the-fly crops, resumable), evaluation (E1 accuracy, E2 calibration simulation, E0/E3 ablations), Colab notebook | done |
 | M4 | LiteRT export (verified bundle + model card), parity tests, golden fixtures for Android | done |
-| M5 | Android `:core:domain` | next |
-| M6 | Android camera + ML adapters, Board screen | |
+| M5 | Android `:core:domain`: preprocessing + calibration ports (golden parity), One Euro filter, cell selector, blink FSM, selection engine | done |
+| M6 | Android camera + ML adapters, Board screen | next |
 | M7 | Calibration flow, profiles | |
 | M8 | Evaluation mode + session export, laptop demo | |
 | M9 | Hardening, model card, results | |

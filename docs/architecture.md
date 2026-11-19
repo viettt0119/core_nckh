@@ -91,6 +91,19 @@ flowchart LR
 The app reads `preprocess_spec.json` from the bundle at runtime (crop sizes, scales, landmark indices), so an
 ablation variant (e.g. 96 px eyes) runs without app code changes.
 
+## Android `:core:domain` (pure Kotlin/JVM)
+
+| Package | Contents | Verified by |
+|---|---|---|
+| `spec` | `PreprocessSpec` parsed at runtime from the bundle's `preprocess_spec.json` | spec hash vs `contracts/golden/index.json` |
+| `face` | `FaceObservation` (478 landmarks, row-major transform), `HeadPose`, `FaceKeypoints` | golden keypoints ≤ 1e-6 |
+| `preprocess` | `CropSampler` (bilinear, supersampled, replicate border), `CropGeometry`, `GeometryFeatures`, `Preprocessor` | golden crops ≤ 1e-5, transforms/geometry ≤ 1e-6 |
+| `calibration` | `RidgeCalibrator` (closed form, Gaussian elimination, leave-one-target-out λ) | golden weights/predictions ≤ 1e-6 |
+| `geometry` | `ScreenGeometry` (camera cm ↔ normalized screen) | golden conversions ≤ 1e-6 |
+| `gaze` | ports `GazeModel`, `ScreenMapper`; `UncalibratedMapper`, `CalibratedMapper`, `GazeEstimator` | unit tests with a fake model |
+| `filter` | `OneEuroFilter`, `PointFilter` | step response, jitter attenuation |
+| `interaction` | `CellGrid`, `CellSelector` (dwell hysteresis + history), `BlinkFsm`, `GazeSelectionEngine` | natural vs deliberate blink, cancel, cooldown, cell locking |
+
 ## Per-frame pipeline (Android)
 
 ```mermaid
