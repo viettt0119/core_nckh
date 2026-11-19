@@ -16,5 +16,15 @@ dependencyResolutionManagement {
 
 rootProject.name = "eyegaze-android"
 
-// Pure Kotlin/JVM modules build anywhere. Android modules (M6+) need the Android SDK and are added here then.
-include(":core:domain")
+include(":core:domain") // pure Kotlin/JVM: builds and tests without the Android SDK
+
+// Android modules need the SDK; without it, :core:domain (all domain logic + golden parity tests) still builds.
+val localProperties = file("local.properties")
+val androidSdkAvailable =
+    listOf("ANDROID_HOME", "ANDROID_SDK_ROOT").any { !System.getenv(it).isNullOrBlank() } ||
+        (localProperties.isFile && localProperties.readLines().any { it.trim().startsWith("sdk.dir=") })
+if (androidSdkAvailable) {
+    include(":core:ml", ":core:camera", ":app")
+} else {
+    logger.lifecycle("Android SDK not found: configuring only :core:domain")
+}

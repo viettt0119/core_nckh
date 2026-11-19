@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">EyeGaze</string>
+    <string name="loading">Loading the gaze model…</string>
+    <string name="camera_permission_title">Camera access needed</string>
+    <string name="camera_permission_body">EyeGaze estimates where you look from the front camera. Frames are processed on this device only; the app has no network access.</string>
+    <string name="camera_permission_grant">Allow camera</string>
+    <string name="no_model_title">No gaze model installed</string>
+    <string name="no_model_body">Export a trained run with `eyegaze export --run runs/base --out models/base`, then build with -Peyegaze.bundle=models/base.\n\nDetails: %1$s</string>
+    <string name="failed_title">Something went wrong</string>
+    <string name="no_face">Face not visible — hold the phone at arm\'s length, face lit from the front.</string>
+    <string name="selected_cell">Selected: %1$d</string>
+    <string name="hint">Look at a cell, then close both eyes for about half a second to select it. Long-press for diagnostics.</string>
+</resources>

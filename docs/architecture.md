@@ -104,6 +104,17 @@ ablation variant (e.g. 96 px eyes) runs without app code changes.
 | `filter` | `OneEuroFilter`, `PointFilter` | step response, jitter attenuation |
 | `interaction` | `CellGrid`, `CellSelector` (dwell hysteresis + history), `BlinkFsm`, `GazeSelectionEngine` | natural vs deliberate blink, cancel, cooldown, cell locking |
 
+## Android runtime (M6)
+
+| Module | Responsibility |
+|---|---|
+| `:core:camera` | CameraX `ImageAnalysis` (front, RGBA, ~640×480, KEEP_ONLY_LATEST) → upright un-mirrored `RgbImage` (`ImageOps`, unit-tested) |
+| `:core:ml` | `AssetBundleSource` + `BundleVerifier` (hash checks at start-up), `LiteRtGazeModel` (named signature, GPU delegate with FP16 → CPU/XNNPACK fallback), `MediaPipeFaceLandmarker` (VIDEO mode, column-major → row-major matrix) |
+| `:app` | Hilt, `BoardViewModel` (StateFlow, per-frame error isolation), Compose Board (hover, locked cell + blink progress, confirmation flash, gaze cursor, diagnostics) |
+
+MediaPipe runs in VIDEO rather than LIVE_STREAM mode: synchronous on the analysis thread, still tracking across
+frames, and with KEEP_ONLY_LATEST the camera drops frames while the pipeline is busy.
+
 ## Per-frame pipeline (Android)
 
 ```mermaid

@@ -13,4 +13,4 @@ Use MediaPipe Face Landmarker (Tasks API, same `face_landmarker.task` model) off
 
 ## Consequences
 
-Training and serving crops come from the same detector and the same code path. We get iris centres, a rigid head transform (pose features) and `eyeBlinkLeft/Right` blendshapes (blink confirmation) for free. Cost: a one-off, sharded, resumable landmarking pass over ~1M frames.
+Training and serving crops come from the same detector and the same code path. (On Android the landmarker runs in VIDEO mode — synchronous, still tracking — instead of LIVE_STREAM; MediaPipe's Android API returns the transform column-major and the adapter converts it to the row-major matrix Python produces.) We get iris centres, a rigid head transform (pose features) and `eyeBlinkLeft/Right` blendshapes (blink confirmation) for free. Cost: a one-off, sharded, resumable landmarking pass over ~1M frames.

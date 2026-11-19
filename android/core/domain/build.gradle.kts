@@ -3,7 +3,6 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.kotlin.serialization)
-    alias(libs.plugins.ktlint)
 }
 
 // Pure Kotlin/JVM: no Android dependency, so the whole domain is tested with fast JVM unit tests.
@@ -42,8 +41,4 @@ tasks.test {
         events("failed")
         exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
     }
-}
-
-ktlint {
-    version.set("1.5.0")
 }

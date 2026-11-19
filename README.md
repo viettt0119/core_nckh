@@ -4,8 +4,8 @@ Look at a cell on the phone screen to select it, close your eyes briefly to conf
 A research project covering the full loop: dataset preparation, model training, rigorous evaluation,
 on-device deployment (LiteRT) and a user study — all on-device, no network permission.
 
-> **Status:** v2 rewrite in progress. Milestones M0–M5 (repo and CI, domain layer, dataset pipeline,
-> model/training/evaluation, LiteRT export and golden fixtures, Android core domain) are done; results will be added once trained on the full dataset; see [Roadmap](#roadmap). The legacy v1 code is preserved at commit `db82694`.
+> **Status:** v2 rewrite in progress. Milestones M0–M6 (repo and CI, domain layer, dataset pipeline,
+> model/training/evaluation, LiteRT export and golden fixtures, Android core domain, Android app) are done; results will be added once trained on the full dataset; see [Roadmap](#roadmap). The legacy v1 code is preserved at commit `db82694`.
 
 ## Repository layout
 
@@ -93,6 +93,22 @@ make android-check
 Runs ktlint plus the `:core:domain` tests, including the golden parity tests that replay
 `contracts/golden` through the Kotlin preprocessing and calibration code.
 
+## Android app
+
+Requires the Android SDK (`ANDROID_HOME`) and a model bundle from `eyegaze export`:
+
+```bash
+make android-app BUNDLE=models/base
+```
+
+```bash
+adb install -r android/app/build/outputs/apk/debug/app-debug.apk
+```
+
+Without a bundle the app still builds and explains how to add one. The face landmarker model is downloaded at
+build time and pinned by SHA-256. The APK requests only the camera permission; network access is stripped from
+the merged manifest. Long-press the board for diagnostics (FPS, per-stage latency, accelerator, head pose).
+
 ## Key design points
 
 * **Train/serve parity by construction** — the same MediaPipe Face Landmarker and the same crop
@@ -116,8 +132,8 @@ Details: [docs/architecture.md](docs/architecture.md) · [ADRs](docs/adr/) ·
 | M3 | Model v2, training (on-the-fly crops, resumable), evaluation (E1 accuracy, E2 calibration simulation, E0/E3 ablations), Colab notebook | done |
 | M4 | LiteRT export (verified bundle + model card), parity tests, golden fixtures for Android | done |
 | M5 | Android `:core:domain`: preprocessing + calibration ports (golden parity), One Euro filter, cell selector, blink FSM, selection engine | done |
-| M6 | Android camera + ML adapters, Board screen | next |
-| M7 | Calibration flow, profiles | |
+| M6 | Android app: CameraX, MediaPipe + LiteRT adapters, verified model bundle, Board screen with diagnostics | done |
+| M7 | Calibration flow, profiles | next |
 | M8 | Evaluation mode + session export, laptop demo | |
 | M9 | Hardening, model card, results | |
 
