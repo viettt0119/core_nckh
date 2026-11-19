@@ -28,12 +28,20 @@ def _fail(message: str) -> typer.Exit:
 def extract(
     zip_path: Annotated[Path, typer.Option("--zip", help="GazeCapture archive")],
     out: Annotated[Path, typer.Option(help="Extraction directory")],
+    only_manifest: Annotated[
+        Path | None, typer.Option(help="Extract only the frames listed in this manifest.parquet")
+    ] = None,
 ) -> None:
-    """Safely extract a GazeCapture zip archive."""
+    """Safely extract a GazeCapture zip archive (resumable; optionally only manifest frames)."""
     from eyegaze.adapters.gazecapture import GazeCaptureError, extract_archive
 
+    include: list[str] | None = None
+    if only_manifest is not None:
+        import pyarrow.parquet as pq
+
+        include = pq.read_table(only_manifest, columns=["frame_relpath"]).column("frame_relpath").to_pylist()
     try:
-        root = extract_archive(zip_path, out)
+        root = extract_archive(zip_path, out, include)
     except (FileNotFoundError, GazeCaptureError, OSError) as exc:
         raise _fail(str(exc)) from exc
     typer.echo(str(root))

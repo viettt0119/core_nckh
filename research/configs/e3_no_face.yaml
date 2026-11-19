@@ -1,0 +1,5 @@
+# E3: remove the face tower (eyes + geometry only).
+base: base.yaml
+run_name: e3_no_face
+model:
+  use_face: false

@@ -9,6 +9,7 @@ from hypothesis import strategies as st
 
 from eyegaze.contracts import load_spec
 from eyegaze.domain.features import GEOMETRY_DIM, geometry_vector
+from eyegaze.domain.keypoints import keypoints_from_observation
 from eyegaze.domain.observation import (
     FaceObservation,
     HeadPose,
@@ -55,7 +56,7 @@ def test_observation_validates_shapes_and_finiteness() -> None:
 
 def test_geometry_vector_layout() -> None:
     pose = HeadPose(0.05, -0.1, 0.02)
-    vec = geometry_vector(make_observation(pose=pose), SPEC)
+    vec = geometry_vector(keypoints_from_observation(make_observation(pose=pose), SPEC), SPEC)
     assert vec.shape == (GEOMETRY_DIM,)
     assert vec.dtype == np.float32
     layout = SPEC.geometry.layout

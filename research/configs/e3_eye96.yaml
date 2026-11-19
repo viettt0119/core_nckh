@@ -1,0 +1,6 @@
+# E3: larger eye crops (96 px).
+base: base.yaml
+run_name: e3_eye96
+data:
+  spec_overrides:
+    eye_size: 96

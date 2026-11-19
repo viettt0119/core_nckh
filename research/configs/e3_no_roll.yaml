@@ -1,0 +1,6 @@
+# E3: disable roll alignment of eye/face crops.
+base: base.yaml
+run_name: e3_no_roll
+data:
+  spec_overrides:
+    align_roll: false

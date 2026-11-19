@@ -8,6 +8,19 @@ import sys
 import structlog
 
 
+class _StderrLogger:
+    """Resolves ``sys.stderr`` on every call (it may be swapped by test runners or notebooks)."""
+
+    def msg(self, message: str) -> None:
+        print(message, file=sys.stderr, flush=True)
+
+    log = debug = info = warn = warning = error = critical = exception = fatal = msg
+
+
+def _stderr_factory(*_args: object) -> _StderrLogger:
+    return _StderrLogger()
+
+
 def configure_logging(level: str = "INFO", json_output: bool = False) -> None:
     numeric = logging.getLevelName(level.upper())
     if not isinstance(numeric, int):
@@ -26,7 +39,7 @@ def configure_logging(level: str = "INFO", json_output: bool = False) -> None:
             renderer,
         ],
         wrapper_class=structlog.make_filtering_bound_logger(numeric),
-        logger_factory=structlog.PrintLoggerFactory(file=sys.stderr),
+        logger_factory=_stderr_factory,
         cache_logger_on_first_use=False,
     )
 

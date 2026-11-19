@@ -8,6 +8,7 @@ from hypothesis import given, settings
 from hypothesis import strategies as st
 
 from eyegaze.contracts import load_spec
+from eyegaze.domain.keypoints import keypoints_from_observation
 from eyegaze.domain.preprocess import (
     CropTransform,
     extract_inputs,
@@ -104,7 +105,7 @@ def test_crop_transform_rejects_non_positive_side() -> None:
 @pytest.mark.parametrize("roll", [0.0, 0.2, -0.35])
 def test_eye_transforms_follow_corner_axis(roll: float) -> None:
     obs = make_observation(image_roll_rad=roll)
-    right, left = eye_transforms(obs, SPEC.eye)
+    right, left = eye_transforms(keypoints_from_observation(obs, SPEC), SPEC.eye)
     corner_dist = EYE_POINTS_PX[133][0] - EYE_POINTS_PX[33][0]
     for t in (right, left):
         assert t.angle == pytest.approx(roll, abs=1e-9)
@@ -116,14 +117,14 @@ def test_eye_transform_without_roll_alignment_is_axis_aligned() -> None:
     from dataclasses import replace
 
     spec = replace(SPEC.eye, align_roll=False)
-    right, left = eye_transforms(make_observation(image_roll_rad=0.3), spec)
+    right, left = eye_transforms(keypoints_from_observation(make_observation(image_roll_rad=0.3), SPEC), spec)
     assert right.angle == 0.0
     assert left.angle == 0.0
 
 
 def test_face_transform_contains_face_bbox() -> None:
     obs = make_observation()
-    t = face_transform(obs, SPEC.face, SPEC.eye)
+    t = face_transform(keypoints_from_observation(obs, SPEC), SPEC.face)
     assert t.side >= (440.0 - 220.0) * SPEC.face.scale * 0.99
 
 

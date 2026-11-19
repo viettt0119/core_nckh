@@ -13,4 +13,4 @@ Crops are rotated squares anchored on landmarks (eye: corner axis × `width_scal
 
 ## Consequences
 
-Parity is verifiable in CI. Roll alignment removes head-tilt variance from eye crops. The spec file's SHA-256 links a model to compatible app builds.
+Parity is verifiable in CI. For training throughput an OpenCV `remap` twin of the sampler is used; a property test bounds its deviation from the reference to < 0.05 grey levels, so the train/serve gap stays far below JPEG noise. Roll alignment removes head-tilt variance from eye crops. The spec file's SHA-256 links a model to compatible app builds.

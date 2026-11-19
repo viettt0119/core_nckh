@@ -1,0 +1,7 @@
+# E0: legacy v1 input definition — Apple boxes, axis-aligned, no geometry/pose branch.
+base: base.yaml
+run_name: e0_legacy_crops
+data:
+  crop_source: apple
+model:
+  geometry: none

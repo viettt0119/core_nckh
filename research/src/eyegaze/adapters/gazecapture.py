@@ -14,7 +14,7 @@ from __future__ import annotations
 import json
 import math
 import zipfile
-from collections.abc import Iterator
+from collections.abc import Collection, Iterator
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -128,18 +128,34 @@ class SubjectFrames:
 # --------------------------------------------------------------------------- archive + discovery
 
 
-def extract_archive(zip_path: Path, output_dir: Path) -> Path:
-    """Extract ``zip_path`` into ``output_dir``, refusing entries that escape it (zip-slip)."""
+def extract_archive(zip_path: Path, output_dir: Path, include: Collection[str] | None = None) -> Path:
+    """Extract ``zip_path`` into ``output_dir``; resumable and zip-slip safe.
+
+    ``include`` (archive-relative POSIX paths, e.g. a manifest's ``frame_relpath``
+    column) limits extraction to those files — on Colab only the frames that
+    survived filtering need to be copied to the fast local disk. Files already
+    present with the right size are skipped, so an interrupted run resumes.
+    """
     if not zip_path.is_file():
         raise FileNotFoundError(f"GazeCapture archive not found: {zip_path}")
     output_dir.mkdir(parents=True, exist_ok=True)
     root = output_dir.resolve()
+    wanted = set(include) if include is not None else None
     with zipfile.ZipFile(zip_path) as zf:
-        for member in zf.infolist():
+        members = zf.infolist()
+        for member in members:
             target = (root / member.filename).resolve()
             if not target.is_relative_to(root):
                 raise GazeCaptureError(f"Archive entry escapes the output directory: {member.filename!r}")
-        zf.extractall(root)
+        for member in members:
+            if member.is_dir():
+                continue
+            if wanted is not None and member.filename not in wanted:
+                continue
+            target = root / member.filename
+            if target.is_file() and target.stat().st_size == member.file_size:
+                continue
+            zf.extract(member, root)
     return root
 
 

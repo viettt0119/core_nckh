@@ -1,0 +1,32 @@
+# v2 reference configuration (experiment E1). Ablations inherit from it with `base: base.yaml`.
+run_name: base
+output_dir: runs
+seed: 42
+device: auto
+data:
+  manifest: runs/manifest.parquet      # output of `eyegaze data manifest`
+  frames_root: data/gazecapture        # extracted GazeCapture root
+  crop_source: mediapipe
+  num_workers: 4
+  augment:
+    enabled: true
+    shift: 0.04
+    scale: 0.05
+    rotate_deg: 3.0
+    brightness: 0.15
+    contrast: 0.15
+model:
+  width: 1.0
+  embedding_dim: 64
+  use_face: true
+  geometry: full
+  dropout: 0.1
+optim:
+  epochs: 30
+  batch_size: 256
+  lr: 0.002
+  weight_decay: 0.0001
+  warmup_epochs: 1.0
+  grad_clip: 5.0
+  patience: 6
+  amp: true

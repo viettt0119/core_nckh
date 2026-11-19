@@ -91,6 +91,16 @@ def test_extract_archive_roundtrip_and_zip_slip(tmp_path: Path, dataset: Path) -
     out = extract_archive(archive, tmp_path / "extracted")
     assert len(discover_subjects(out)) == 3
 
+    # Selective + resumable extraction.
+    partial = tmp_path / "partial"
+    wanted = ["gazecapture/00001/frames/00000.jpg"]
+    extract_archive(archive, partial, include=wanted)
+    files = [p for p in partial.rglob("*") if p.is_file()]
+    assert [f.relative_to(partial).as_posix() for f in files] == wanted
+    mtime = files[0].stat().st_mtime_ns
+    extract_archive(archive, partial, include=wanted)
+    assert files[0].stat().st_mtime_ns == mtime  # already present → skipped
+
     evil = tmp_path / "evil.zip"
     with zipfile.ZipFile(evil, "w") as zf:
         zf.writestr("../escape.txt", "x")

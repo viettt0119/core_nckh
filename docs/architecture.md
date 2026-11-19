@@ -52,6 +52,28 @@ flowchart LR
 Resumability: a finished subject is a Parquet file that exists; its schema metadata stores the
 fingerprint (landmarker SHA-256 + filters). Resuming with different settings is refused.
 
+## Training and evaluation
+
+```mermaid
+flowchart LR
+    M[(manifest.parquet)] -->|stream in 50k-row batches| T[FrameTable<br/>6 keypoints + bbox + pose per frame<br/>~100 B/frame]
+    T --> D[GazeDataset<br/>crop transforms → jitter → cv2.remap twin of the reference sampler<br/>→ photometric aug]
+    D --> N[EyeGazeNet v2<br/>shared eye tower · face tower · geometry MLP<br/>→ gaze_cm, embedding]
+    N -->|Euclidean cm loss, AdamW, warmup+cosine, AMP| CK[(best.pt / last.pt<br/>config · effective spec + SHA-256)]
+    CK --> E1[E1 accuracy<br/>frame + subject mean, per device]
+    CK --> E2[E2 calibration simulation<br/>k dots per subject, ridge vs SVR]
+    E1 & E2 --> E3[ablation-table]
+```
+
+* **Model selection** on validation *subject-mean* error; early stopping with patience.
+* **Resumable**: `last.pt` holds optimizer/scheduler/scaler state and history; resuming with a different
+  preprocess spec is refused.
+* **Ablations without re-materializing data**: crops are rendered on the fly from keypoints, so each config may
+  use its own spec variant (crop size, roll alignment) or the legacy Apple boxes (E0).
+* **Sampler backends**: the numpy reference (`domain/preprocess.py`) defines the contract and golden fixtures;
+  training uses an OpenCV `remap` twin (`adapters/fast_sampler.py`), ~4.5x faster and within 0.05 grey levels
+  (property-tested).
+
 ## Per-frame pipeline (Android)
 
 ```mermaid

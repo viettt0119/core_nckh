@@ -1,0 +1,8 @@
+# E3: larger eye crops (128 px, EyeMU uses 128).
+base: base.yaml
+run_name: e3_eye128
+data:
+  spec_overrides:
+    eye_size: 128
+optim:
+  batch_size: 192

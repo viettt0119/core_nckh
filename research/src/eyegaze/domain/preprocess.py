@@ -19,7 +19,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from eyegaze.domain.features import geometry_vector
-from eyegaze.domain.geometry import Box
+from eyegaze.domain.keypoints import FaceKeypoints, keypoints_from_observation
 from eyegaze.domain.observation import FaceObservation
 from eyegaze.domain.spec import EyeSpec, FaceSpec, PreprocessSpec, SamplingSpec
 
@@ -61,9 +61,14 @@ def _bilinear_replicate(image: UInt8Array, xs: FloatArray, ys: FloatArray) -> Fl
     y1i = np.clip(y0i + 1, 0, height - 1)
     x0i = np.clip(x0i, 0, width - 1)
     y0i = np.clip(y0i, 0, height - 1)
-    img = image.astype(np.float64)
-    top = img[y0i, x0i] * (1.0 - fx) + img[y0i, x1i] * fx
-    bottom = img[y1i, x0i] * (1.0 - fx) + img[y1i, x1i] * fx
+
+    # Gather from uint8 and convert only the sampled pixels (converting the whole frame dominates runtime).
+    def px(yi: NDArray[np.int64], xi: NDArray[np.int64]) -> FloatArray:
+        out: FloatArray = image[yi, xi].astype(np.float64)
+        return out
+
+    top = px(y0i, x0i) * (1.0 - fx) + px(y0i, x1i) * fx
+    bottom = px(y1i, x0i) * (1.0 - fx) + px(y1i, x1i) * fx
     result: FloatArray = top * (1.0 - fy) + bottom * fy
     return result
 
@@ -104,12 +109,10 @@ def warp_crop(
     return out
 
 
-# --------------------------------------------------------------------------- landmarks → crops
+# --------------------------------------------------------------------------- keypoints → crops
 
 
-def _eye_transform(
-    obs: FaceObservation, left_px: tuple[float, float], right_px: tuple[float, float], spec: EyeSpec
-) -> CropTransform:
+def _eye_transform(left_px: tuple[float, float], right_px: tuple[float, float], spec: EyeSpec) -> CropTransform:
     """Crop around the segment from the image-left corner to the image-right corner."""
     dx = right_px[0] - left_px[0]
     dy = right_px[1] - left_px[1]
@@ -125,34 +128,34 @@ def _eye_transform(
     )
 
 
-def eye_transforms(obs: FaceObservation, spec: EyeSpec) -> tuple[CropTransform, CropTransform]:
+def eye_transforms(kp: FaceKeypoints, spec: EyeSpec) -> tuple[CropTransform, CropTransform]:
     """Return ``(right_eye, left_eye)`` crop transforms (subject's right/left).
 
     In an un-mirrored frame the subject's right eye is on the image left, so its
     outer corner is the image-left point; for the left eye the inner corner is.
     """
-    right = _eye_transform(obs, obs.px(spec.right.outer), obs.px(spec.right.inner), spec)
-    left = _eye_transform(obs, obs.px(spec.left.inner), obs.px(spec.left.outer), spec)
-    return right, left
+    return _eye_transform(kp.right_outer, kp.right_inner, spec), _eye_transform(kp.left_inner, kp.left_outer, spec)
 
 
-def face_bbox(obs: FaceObservation, spec: FaceSpec) -> Box:
-    pts = obs.landmarks[: spec.bbox_landmark_count, :2]
-    xs = pts[:, 0] * obs.frame_width
-    ys = pts[:, 1] * obs.frame_height
-    x0, x1 = float(xs.min()), float(xs.max())
-    y0, y1 = float(ys.min()), float(ys.max())
-    return Box(x0, y0, max(x1 - x0, 1e-6), max(y1 - y0, 1e-6))
-
-
-def face_transform(obs: FaceObservation, face: FaceSpec, eye: EyeSpec) -> CropTransform:
-    box = face_bbox(obs, face)
+def face_transform(kp: FaceKeypoints, face: FaceSpec) -> CropTransform:
+    box = kp.face_bbox
     angle = 0.0
     if face.align_roll:
-        rx, ry = obs.px(eye.right.outer)
-        lx, ly = obs.px(eye.left.outer)
+        (rx, ry), (lx, ly) = kp.right_outer, kp.left_outer
         angle = math.atan2(ly - ry, lx - rx)
     return CropTransform(cx=box.cx, cy=box.cy, side=max(box.w, box.h) * face.scale, angle=angle)
+
+
+@dataclass(frozen=True, slots=True)
+class CropTransforms:
+    right_eye: CropTransform
+    left_eye: CropTransform
+    face: CropTransform
+
+
+def crop_transforms(kp: FaceKeypoints, spec: PreprocessSpec) -> CropTransforms:
+    right, left = eye_transforms(kp, spec.eye)
+    return CropTransforms(right, left, face_transform(kp, spec.face))
 
 
 @dataclass(frozen=True, slots=True)
@@ -165,18 +168,27 @@ class ModelInputs:
     geometry: Float32Array  # (17,)
 
 
-def extract_inputs(image_rgb: UInt8Array, obs: FaceObservation, spec: PreprocessSpec) -> ModelInputs:
-    """Full per-frame preprocessing: three crops plus the geometry vector."""
-    if image_rgb.shape[0] != obs.frame_height or image_rgb.shape[1] != obs.frame_width:
-        raise ValueError(
-            f"Image {image_rgb.shape[1]}x{image_rgb.shape[0]} does not match observation "
-            f"{obs.frame_width}x{obs.frame_height}"
-        )
-    right_t, left_t = eye_transforms(obs, spec.eye)
-    face_t = face_transform(obs, spec.face, spec.eye)
-    return ModelInputs(
-        right_eye=warp_crop(image_rgb, right_t, spec.eye.size, spec.sampling),
-        left_eye=warp_crop(image_rgb, left_t, spec.eye.size, spec.sampling, flip_horizontal=spec.eye.flip_left),
-        face=warp_crop(image_rgb, face_t, spec.face.size, spec.sampling),
-        geometry=geometry_vector(obs, spec),
+def render_crops(
+    image_rgb: UInt8Array, transforms: CropTransforms, spec: PreprocessSpec
+) -> tuple[Float32Array, Float32Array, Float32Array]:
+    """Sample ``(right_eye, left_eye, face)`` crops for the given transforms."""
+    return (
+        warp_crop(image_rgb, transforms.right_eye, spec.eye.size, spec.sampling),
+        warp_crop(image_rgb, transforms.left_eye, spec.eye.size, spec.sampling, flip_horizontal=spec.eye.flip_left),
+        warp_crop(image_rgb, transforms.face, spec.face.size, spec.sampling),
     )
+
+
+def extract_inputs_from_keypoints(image_rgb: UInt8Array, kp: FaceKeypoints, spec: PreprocessSpec) -> ModelInputs:
+    if image_rgb.shape[0] != kp.frame_height or image_rgb.shape[1] != kp.frame_width:
+        raise ValueError(
+            f"Image {image_rgb.shape[1]}x{image_rgb.shape[0]} does not match keypoints "
+            f"{kp.frame_width}x{kp.frame_height}"
+        )
+    right, left, face = render_crops(image_rgb, crop_transforms(kp, spec), spec)
+    return ModelInputs(right_eye=right, left_eye=left, face=face, geometry=geometry_vector(kp, spec))
+
+
+def extract_inputs(image_rgb: UInt8Array, obs: FaceObservation, spec: PreprocessSpec) -> ModelInputs:
+    """Full per-frame preprocessing from a landmarker result: three crops plus the geometry vector."""
+    return extract_inputs_from_keypoints(image_rgb, keypoints_from_observation(obs, spec), spec)
