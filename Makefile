@@ -8,8 +8,8 @@ LANDMARKER_URL := https://storage.googleapis.com/mediapipe-models/face_landmarke
 help:  ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-12s %s\n", $$1, $$2}'
 
-setup:  ## Create the research virtualenv (core + dev tools)
-	$(UV) sync --python 3.11
+setup:  ## Create the research virtualenv (core + data extra + dev tools)
+	$(UV) sync --python 3.11 --extra data
 
 lint:  ## Ruff lint + format check
 	$(UV) run ruff check src tests

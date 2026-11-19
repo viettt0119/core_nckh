@@ -13,10 +13,12 @@ from typing import Annotated
 import typer
 
 from eyegaze import __version__
+from eyegaze.cli_data import data_app
 from eyegaze.contracts import DEFAULT_SPEC_PATH, ContractError, load_spec, spec_hash
 from eyegaze.log import configure_logging
 
 app = typer.Typer(add_completion=False, no_args_is_help=True, help="EyeGaze research toolkit.")
+app.add_typer(data_app, name="data")
 
 
 @app.callback()

@@ -34,9 +34,23 @@ flowchart LR
 | Layer | Contents | Rules |
 |---|---|---|
 | `domain/` | `spec`, `observation` (landmarks, head pose), `preprocess` (reference crop sampler), `features`, `geometry` (cm ↔ screen), `calibration` (ridge + LOO-target CV), `metrics` | numpy + stdlib only, no I/O, `mypy --strict` |
-| `application/` | use cases: build dataset, train, evaluate, export; `ports.py` protocols | depends on domain + ports only |
+| `application/` | use cases: build dataset, train, evaluate, export; `ports.py` protocols | depends on domain + ports; dataset use cases also use the GazeCapture/landmark-store adapters directly, since those *are* the data format |
 | `adapters/` | GazeCapture reader, MediaPipe landmarker, shard storage, PyTorch model, LiteRT export | the only place touching files/frameworks |
 | `contracts.py`, `cli.py`, `log.py` | boundary parsing (Pydantic), Typer CLI, structlog | thin |
+
+## Dataset pipeline
+
+```mermaid
+flowchart LR
+    Z[archive.zip] -->|eyegaze data extract<br/>zip-slip safe| R[(GazeCapture root<br/>flat or nested)]
+    R -->|discover + validate JSON<br/>phone · portrait · stride · finite label| S[subject frames]
+    S -->|MediaPipe IMAGE mode<br/>N spawn workers| L[(landmarks/&lt;subject&gt;.parquet<br/>atomic write · fingerprint · stats)]
+    L -->|eyegaze data manifest<br/>status == ok · eyes open| M[(manifest.parquet)]
+    L --> REP[manifest.report.json<br/>every dropped frame accounted for]
+```
+
+Resumability: a finished subject is a Parquet file that exists; its schema metadata stores the
+fingerprint (landmarker SHA-256 + filters). Resuming with different settings is refused.
 
 ## Per-frame pipeline (Android)
 

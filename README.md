@@ -4,7 +4,7 @@ Look at a cell on the phone screen to select it, close your eyes briefly to conf
 A research project covering the full loop: dataset preparation, model training, rigorous evaluation,
 on-device deployment (LiteRT) and a user study — all on-device, no network permission.
 
-> **Status:** v2 rewrite in progress. Milestones M0 (repo, tooling, CI, ADRs) and M1 (domain layer)
+> **Status:** v2 rewrite in progress. Milestones M0–M2 (repo and CI, domain layer, dataset pipeline)
 > are done; see [Roadmap](#roadmap). The legacy v1 code is preserved at commit `db82694`.
 
 ## Repository layout
@@ -32,6 +32,25 @@ make check
 uv --directory research run eyegaze spec
 ```
 
+## Preparing the dataset
+
+GazeCapture (zip or extracted, flat or `<id>/<id>/` layout) → per-subject landmark files → manifest:
+
+```bash
+make models
+```
+
+```bash
+uv --directory research run eyegaze data landmarks --data /path/to/gazecapture --out runs/landmarks --workers 8
+```
+
+```bash
+uv --directory research run eyegaze data manifest --landmarks runs/landmarks --out runs/manifest.parquet
+```
+
+On Colab use [`research/notebooks/01_prepare_dataset.ipynb`](research/notebooks/01_prepare_dataset.ipynb)
+(outputs go to Drive; re-running resumes where it stopped). MediaPipe needs `libgles2 libegl1` on Linux.
+
 ## Key design points
 
 * **Train/serve parity by construction** — the same MediaPipe Face Landmarker and the same crop
@@ -51,8 +70,8 @@ Details: [docs/architecture.md](docs/architecture.md) · [ADRs](docs/adr/) ·
 |---|---|---|
 | M0 | Repo restructure, tooling, CI, ADRs | done |
 | M1 | Domain: preprocessing spec + reference sampler, features, geometry, calibration, metrics | done |
-| M2 | Dataset pipeline: GazeCapture reader, sharded landmarking, crop shards | next |
-| M3 | Model v2, training, evaluation (E0–E3), Colab wrapper | |
+| M2 | Dataset pipeline: GazeCapture reader, resumable parallel landmarking, manifest + drop report | done |
+| M3 | Model v2, training (on-the-fly crops + spec-keyed crop cache), evaluation (E0–E3), Colab wrapper | next |
 | M4 | LiteRT export, parity tests, golden fixtures | |
 | M5 | Android `:core:domain` | |
 | M6 | Android camera + ML adapters, Board screen | |

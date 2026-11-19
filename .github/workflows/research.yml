@@ -23,8 +23,12 @@ jobs:
         with:
           enable-cache: true
           cache-dependency-glob: research/uv.lock
+      - name: System libraries for MediaPipe
+        run: sudo apt-get update -q && sudo apt-get install -y -q libgles2 libegl1
       - name: Sync environment
         run: make setup
+      - name: Download face landmarker model
+        run: make models
       - name: Lint
         run: make lint
       - name: Type-check
