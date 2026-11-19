@@ -1,26 +1,31 @@
+# Python
 __pycache__/
 *.py[cod]
+.venv/
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+*.egg-info/
 
-# Generated training artifacts
-runs/
-models/**/*.pt
-models/**/*.pth
-models/**/*.dat
-!models/**/README.md
-models/**/model_info.json
-models/**/eval_*.json
-models/**/calibration.json
-storage/sessions/
-storage/logs/
-
-# Dataset (too large for git)
+# Data and artifacts (too large / licensed: GazeCapture is non-commercial)
 data/
+runs/
+models/*
+!models/README.md
 
-# IDE
+# Android / Gradle
+android/.gradle/
+android/build/
+android/**/build/
+android/local.properties
+android/.idea/
+*.apk
+*.aab
+*.keystore
+
+# IDE / OS
 .idea/
 .vscode/
-
-# Local virtual environments
-.venv/
-venv/
+.DS_Store

@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "frame": {
+    "color_order": "RGB",
+    "orientation": "upright, un-mirrored (sensor image rotated so the face is upright; NOT the mirrored preview)",
+    "landmarks": "MediaPipe Face Landmarker, 478 points, x/y normalized to [0,1] by frame width/height",
+    "transform_matrix": "4x4 facial transformation matrix, row-major"
+  },
+  "sampling": {
+    "method": "bilinear",
+    "supersample": 2,
+    "border": "replicate",
+    "pixel_divisor": 255.0
+  },
+  "eye": {
+    "size": 64,
+    "width_scale": 1.8,
+    "align_roll": true,
+    "right": { "outer": 33, "inner": 133, "iris_center": 468 },
+    "left": { "outer": 263, "inner": 362, "iris_center": 473 },
+    "flip_left": true
+  },
+  "face": {
+    "size": 64,
+    "scale": 1.25,
+    "align_roll": true,
+    "bbox_landmark_count": 468
+  },
+  "geometry": {
+    "dim": 17,
+    "layout": [
+      "right_outer_x", "right_outer_y", "right_inner_x", "right_inner_y",
+      "left_inner_x", "left_inner_y", "left_outer_x", "left_outer_y",
+      "right_iris_x", "right_iris_y", "left_iris_x", "left_iris_y",
+      "pitch_rad", "yaw_rad", "roll_rad",
+      "face_bbox_w", "face_bbox_h"
+    ]
+  }
+}

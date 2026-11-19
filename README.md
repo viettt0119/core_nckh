@@ -1,162 +1,65 @@
-# EyeGaze Realtime Demo
+# EyeGaze — gaze selection on Android
 
-EyeGaze is a Python 3.11 project for webcam-based gaze direction demos.
+Look at a cell on the phone screen to select it, close your eyes briefly to confirm.
+A research project covering the full loop: dataset preparation, model training, rigorous evaluation,
+on-device deployment (LiteRT) and a user study — all on-device, no network permission.
 
-The project has two main parts:
+> **Status:** v2 rewrite in progress. Milestones M0 (repo, tooling, CI, ADRs) and M1 (domain layer)
+> are done; see [Roadmap](#roadmap). The legacy v1 code is preserved at commit `db82694`.
 
-- GazeCapture training: builds a model from `appleFace`, `appleLeftEye`, `appleRightEye`, `dotInfo`, `screen`, and frame images.
-- User calibration: keeps the trained base model separate from per-user calibration files.
-
-## Structure
-
-```text
-src/eyegaze/              Runtime package: dataset, preprocessing, model, calibration, realtime
-Colab1.1/                 Upload package for Google Colab training
-models/trained/           Installed runtime model: gaze_model.dat
-models/users/             Per-user calibration JSON files
-models/landmarks/         Reserved for future landmark .dat files
-storage/                  Local runtime logs/sessions
-data/                     Local GazeCapture data
-runs/                     Training outputs
-tests/                    Unit tests
-
-train.py                  Train locally from data/
-evaluate.py               Evaluate a checkpoint
-install_model.py          Install best.dat as models/trained/gaze_model.dat
-calibrate_user.py         Collect calibration samples for a user
-demo_realtime.py          Run webcam realtime demo
-check_env.py              Check demo/train environment
-export_tflite.py          Export the PyTorch checkpoint to TFLite
-```
-
-## Setup
-
-```powershell
-py -3.11 -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install -r requirements.txt
-```
-
-## Realtime Demo
-
-The demo can run without a trained model by using the MediaPipe fallback predictor.
-
-```powershell
-python check_env.py --mode demo
-python demo_realtime.py
-```
-
-With a trained checkpoint:
-
-```powershell
-python install_model.py --src path\to\best.dat
-python check_env.py --mode demo
-python calibrate_user.py --user default
-python demo_realtime.py --user default
-```
-
-## Local Training
-
-Put extracted GazeCapture subjects under `data/`, then run:
-
-```powershell
-python check_env.py --mode train
-python train.py --data data --out runs/eyegaze --epochs 20 --batch-size 64
-python install_model.py --src runs/eyegaze/best.dat
-```
-
-For a quick smoke test:
-
-```powershell
-python train.py --out runs/smoke --epochs 1 --batch-size 8 --limit-train 16 --limit-val 8
-```
-
-## Evaluation
-
-```powershell
-python evaluate.py --checkpoint models/trained/gaze_model.dat --split test
-```
-
-The evaluator writes JSON metrics next to the checkpoint unless `--out` is provided.
-
-## Colab Training
-
-Upload these items to Google Drive:
+## Repository layout
 
 ```text
-archive.zip
-Colab1.1/
+contracts/   Language-neutral specs binding Python and Kotlin (preprocessing, model I/O, golden fixtures)
+research/    Python: GazeCapture → dataset → training → evaluation → LiteRT export
+android/     Kotlin app: camera → landmarks → gaze → calibration → cell selection + blink confirm
+docs/        Architecture, ADRs, evaluation protocol, model card
 ```
 
-Open:
+## Quick start (research)
 
-```text
-Colab1.1/GazeCapture_Train_Colab1_1.ipynb
+Requires [uv](https://docs.astral.sh/uv/) and Python 3.11.
+
+```bash
+make setup
 ```
 
-The notebook trains and exports:
-
-```text
-best.dat
-last.dat
-history.json
-eval_test.json
-manifest.csv
+```bash
+make check
 ```
 
-Download `best.dat` to the laptop and install it with `install_model.py`.
-
-## Calibration
-
-Calibration is stored separately from the base model:
-
-```text
-models/users/default/calibration.json
+```bash
+uv --directory research run eyegaze spec
 ```
 
-Create or refresh calibration:
+## Key design points
 
-```powershell
-python calibrate_user.py --user default
-```
+* **Train/serve parity by construction** — the same MediaPipe Face Landmarker and the same crop
+  specification ([`contracts/preprocess_spec.v1.json`](contracts/preprocess_spec.v1.json)) are used for
+  training data and on the phone; Kotlin is tested against golden tensors produced by the Python reference.
+* **Errors in centimetres, per subject** — comparable with published work, and honest about the worst users.
+* **Per-user calibration on device** — ridge regression on network embeddings, λ chosen by
+  leave-one-target-out cross-validation.
+* **Deliberate-blink confirmation** — long blink (400–1500 ms) via blendshapes, cell locked at blink onset.
 
-Use a separate `--user` value for each person.
+Details: [docs/architecture.md](docs/architecture.md) · [ADRs](docs/adr/) ·
+[evaluation protocol](docs/evaluation-protocol.md).
 
-## TFLite Export
+## Roadmap
 
-Install the optional converter first:
+| Milestone | Scope | Status |
+|---|---|---|
+| M0 | Repo restructure, tooling, CI, ADRs | done |
+| M1 | Domain: preprocessing spec + reference sampler, features, geometry, calibration, metrics | done |
+| M2 | Dataset pipeline: GazeCapture reader, sharded landmarking, crop shards | next |
+| M3 | Model v2, training, evaluation (E0–E3), Colab wrapper | |
+| M4 | LiteRT export, parity tests, golden fixtures | |
+| M5 | Android `:core:domain` | |
+| M6 | Android camera + ML adapters, Board screen | |
+| M7 | Calibration flow, profiles | |
+| M8 | Evaluation mode + session export, laptop demo | |
+| M9 | Hardening, model card, results | |
 
-```powershell
-python -m pip install ai-edge-torch
-```
+## Data and license
 
-Then export:
-
-```powershell
-python export_tflite.py --checkpoint models/trained/gaze_model.dat --out models/trained/gaze_model.tflite
-```
-
-The exported output tensors are ordered as:
-
-```text
-gaze_xy, direction_logits
-```
-
-## Tests
-
-```powershell
-python -m pytest -q
-```
-
-## Checkpoint Format
-
-`models/trained/gaze_model.dat` is a PyTorch checkpoint with a deploy-style extension. Required keys:
-
-```text
-format
-model_state
-image_size
-face_size
-direction_labels
-metrics
-```
+GazeCapture is licensed for **non-commercial research only**; it is not redistributed here.
